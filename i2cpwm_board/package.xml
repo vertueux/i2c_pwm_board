@@ -7,6 +7,7 @@
     Controller for the Adafruit 16 channel PWM servo I2C board, hat, and similar PCA9685 based boards,
 	  provides absolute proportional PWM control as well as supports geometry_msgs/Twist.
   </description>
+  <maintainer email="virtuous.open.source@gmail.com">Virtuous</maintainer>
   <license>GPLv3</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
