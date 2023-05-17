@@ -14,10 +14,10 @@ find_package(i2cpwm_board_msgs REQUIRED)
 find_package(xmlrpcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
 
-add_executable(executable src/i2cpwm_controller.cc)
-target_link_libraries(executable i2c)
+add_executable(i2cpwm_executable src/i2cpwm_controller.cc)
+target_link_libraries(i2cpwm_executable i2c)
 
-ament_target_dependencies(executable 
+ament_target_dependencies(i2cpwm_executable 
   rclcpp 
   std_msgs 
   std_srvs
@@ -27,7 +27,7 @@ ament_target_dependencies(executable
 )
 
 install(TARGETS
-  executable 
+  i2cpwm_executable 
   DESTINATION lib/${PROJECT_NAME}
 )
 
