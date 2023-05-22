@@ -5,7 +5,7 @@
   </p>
 </h1>
 
-**ROS2** (**R**obot **O**perating **S**ystem **2**) node for controlling PWM boards based on the PCA9685 chip with an I2C interface. Primary use is for controlling RC Servos and DC motors via PWM. This is based on [ros-i2cpwmboard](https://gitlab.com/bradanlane/ros-i2cpwmboard) *(OUTDATED)* with updates to make it work on ROS2.
+**ROS2** node for controlling PWM boards based on the PCA9685 chip with an I2C interface. Primary use is for controlling RC Servos and DC motors via PWM. This is based on [ros-i2cpwmboard](https://gitlab.com/bradanlane/ros-i2cpwmboard) *(OUTDATED)* with updates to make it work on ROS2.
 
 ## Dependencies
 
@@ -146,6 +146,13 @@ source /opt/ros/humble/setup.bash # With Debian binaries
 cd /i2cpwm_board/
 colcon build --packages-select i2cpwm_board i2cpwm_board_msgs xmlrpcpp
 source install/setup.bash # Do not change directory
+```
+
+### Run it
+In order to just start the project, you just have to perform this command:
+
+```bash
+ros2 run i2cpwm_board i2cpwm_executable
 ```
 
 --- 
