@@ -149,7 +149,7 @@ source install/setup.bash # Do not change directory
 ```
 
 ### Run it
-In order to just start the project, you just have to perform this command:
+In order to just start the project, you just have to perform this command :
 
 ```bash
 ros2 run i2cpwm_board i2cpwm_executable

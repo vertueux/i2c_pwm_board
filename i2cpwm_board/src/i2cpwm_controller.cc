@@ -258,7 +258,7 @@ static void _set_pwm_frequency (int freq)
   if (0 > i2c_smbus_write_byte_data(_controller_io_handle, __MODE1, oldmode))
     RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Unable to set PWM controller to active mode"); 
 
-  RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Setting PWM frequency to %d Hz", freq);
+  // RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Setting PWM frequency to %d Hz", freq);
 
   nanosleep((const struct timespec[]){{0, 5000000L}}, NULL);   // Sleep 5 microseconds.
 
