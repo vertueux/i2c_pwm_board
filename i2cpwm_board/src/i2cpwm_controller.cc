@@ -867,7 +867,7 @@ static int _load_params (void) {
   _set_active_board (1);
 
   int pwm;
-  node->declare_parameter("pwm_frequency", pwm /*, 50 */);
+  node->declare_parameter("pwm_frequency", pwm , 50);
   _set_pwm_frequency (pwm);
 
   /*
