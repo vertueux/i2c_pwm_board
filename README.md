@@ -17,6 +17,63 @@ You need to have ROS2 installed (of course) and theses packages provided by the 
 * Have ```libi2c-dev``` and ```i2c-tools``` installed
 * Have the [xmlrpcpp](https://github.com/bpwilcox/xmlrpcpp) package
 
+## Clone it 
+
+You can clone and run this package by copying the command below: 
+
+* Note that if you want to run this project, you have to clone the xmlrpcpp packages : 
+
+```bash
+git clone --recursive https://github.com/vertueux/i2cpwm_board.git
+```
+
+## Install automatically
+
+You can install the i2c library and colcon by running the install scripts located at `install_scripts/install_dependencies.sh`.
+Simply just copy & paste this code:
+
+```sh
+cd install_script/
+chmod +x install_dependencies.sh
+./install_dependencies
+```
+
+## Build it 
+
+```bash
+source /opt/ros/humble/setup.bash # With Debian binaries 
+cd /i2cpwm_board/
+colcon build --packages-select i2cpwm_board i2cpwm_board_msgs xmlrpcpp
+source install/setup.bash # Do not change directory
+```
+
+## Run it
+In order to run the project, you just have to perform this command :
+
+```bash
+ros2 run i2cpwm_board i2cpwm_executable
+```
+
+## Examples
+```bash
+# Setting PWM frequency to 50Hz.
+ros2 service call /set_pwm_frequency i2cpwm_board_msgs/srv/IntValue "{value: 50}"
+
+# Configuring two servos.
+ros2 service call /config_servos i2cpwm_board_msgs/srv/ServosConfig "servos: [{servo: 1, center: 333, rang
+e: 100, direction: -1},{servo: 2, center: 336, range: 108, direction: 1}]"
+
+# Configuring those two servos on differential mode.
+ros2 service call /config_drive_mode i2cpwm_board_msgs/srv/DriveMode "{mode: differential, rpm: 56.0, radius: 0.0055, track: 0.015, scale: 1.0,servos: [{servo: 1, position: 1}, {servo: 2, position: 2}]}"
+
+# Drive both servos forward at 40% of maximum speed.
+ros2 topic pub -1 /servos_proportional i2cpwm_board_msgs/msg/ServoArray "{servos:[{servo: 1, value: 0.40}, {servo: 2, value: 0.40}]}"
+
+# More documentation at the original page of the project (for ROS1) -> https://github.com/mentor-dyun/ros-i2cpwmboard/doc or https://gitlab.com/fmrico/ros-i2cpwmboard/-/tree/master/doc
+```
+
+## Installing ROS2
+
 ### Set locale
 
 Make sure you have a locale which supports ```UTF-8```. If you are in a minimal environment (such as a docker container), the locale may be something minimal like POSIX. We test with the following settings. However, it should be fine if you’re using a different UTF-8 supported locale.
@@ -113,46 +170,10 @@ Set up your environment by sourcing the following file.
 source /opt/ros/humble/setup.bash
 ```
 
-### Install automatically
-
-You can install the i2c library and colcon by running the install scripts located at `install_scripts/install_dependencies.sh`.
-Simply just copy & paste this code:
-
-```sh
-cd install_script/
-chmod +x install_dependencies.sh
-./install_dependencies
-```
-
 ### Installing colcon
 
 ```bash
 sudo apt install python3-colcon-common-extensions
-```
-
-### Clone & Build it 
-
-You can clone and run this package by copying the commands below: 
-Note that if you want to run this project, you have to clone the xmlrpcpp packages and have the i2c library, which you can by copying this text below : 
-
-```bash
-git clone --recursive https://github.com/vertueux/i2cpwm_board.git
-```
-
-### Build it 
-
-```bash
-source /opt/ros/humble/setup.bash # With Debian binaries 
-cd /i2cpwm_board/
-colcon build --packages-select i2cpwm_board i2cpwm_board_msgs xmlrpcpp
-source install/setup.bash # Do not change directory
-```
-
-### Run it
-In order to just start the project, you just have to perform this command :
-
-```bash
-ros2 run i2cpwm_board i2cpwm_executable
 ```
 
 --- 
