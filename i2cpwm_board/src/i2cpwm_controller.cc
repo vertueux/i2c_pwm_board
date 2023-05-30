@@ -194,7 +194,7 @@ static float _convert_mps_to_proportional (float speed)
 {
 	/* We use the drive mouter output rpm and wheel radius to compute the conversion. */
 
-	float initial, max_rate;	// the max m/s is ((rpm/60) * (2*PI*radius))
+	float initial, max_rate;	// The max m/s is ((rpm/60) * (2*PI*radius)).
   initial = speed;
 
   if (_active_drive.rpm <= 0.0) {
@@ -224,7 +224,7 @@ static float _convert_mps_to_proportional (float speed)
  */
 static void _set_pwm_frequency (int freq)
 {
-  unsigned char prescale;
+  int prescale;
   char oldmode, newmode;
   int res;
 
@@ -232,15 +232,12 @@ static void _set_pwm_frequency (int freq)
     
   RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "_set_pwm_frequency prescale");
   
-  //    float prescaleval = 25000000.0; // 25MHz
-  //    prescaleval /= 4096.0;
-  //    prescaleval /= (float)freq;
-  //    prescaleval -= 1.0;
-  //    //RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Estimated pre-scale: %6.4f", prescaleval);
-  //    prescale = floor(prescaleval + 0.5);
-  //    // RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Final pre-scale: %d", prescale);
-  // Optimized to :
-  prescale = (unsigned char)(25000000.0f / (4096.0f * freq) - 0.5f);
+  float prescaleval = 25000000.0; // 25MHz
+  prescaleval /= 4096.0;
+  prescaleval /= (float)freq;
+  prescaleval -= 1.0;
+  prescale = floor(prescaleval + 0.5);
+  // prescale = (unsigned char)(25000000.0f / (4096.0f * freq) - 0.5f);
 
   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Setting PWM frequency to %d Hz", freq);
 
@@ -252,13 +249,11 @@ static void _set_pwm_frequency (int freq)
   if (0 > i2c_smbus_write_byte_data (_controller_io_handle, __MODE1, newmode)) // Go to sleep.
     RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Unable to set PWM controller to sleep mode"); 
 
-  if (0 >  i2c_smbus_write_byte_data(_controller_io_handle, __PRESCALE, (int)(floor(prescale))))
+  if (0 >  i2c_smbus_write_byte_data(_controller_io_handle, __PRESCALE, (prescale)))
     RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Unable to set PWM controller prescale"); 
 
   if (0 > i2c_smbus_write_byte_data(_controller_io_handle, __MODE1, oldmode))
     RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Unable to set PWM controller to active mode"); 
-
-  // RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Setting PWM frequency to %d Hz", freq);
 
   nanosleep((const struct timespec[]){{0, 5000000L}}, NULL);   // Sleep 5 microseconds.
 
@@ -366,10 +361,9 @@ static void _set_pwm_interval(int servo, int start, int end) {
 
 	servo = ((servo-1) % 16) + 1;			// servo numbers are 1..16
 
-
-    // the public API is ONE based and hardware is ZERO based
-    board = _active_board - 1;				// the hardware enumerates boards as 0..61
-    int channel = servo - 1;				// the hardware enumerates servos as 0..15
+  // the public API is ONE based and hardware is ZERO based
+  board = _active_board - 1;				// the hardware enumerates boards as 0..61
+  int channel = servo - 1;				// the hardware enumerates servos as 0..15
 	RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "_set_pwm_interval board=%d servo=%d", board, servo);
     
   if (0 > i2c_smbus_write_byte_data (_controller_io_handle, __CHANNEL_ON_L+4*channel, start & 0xFF))
@@ -471,7 +465,7 @@ static int _config_drive_mode (std::string mode, float rpm, float radius, float 
 	int mode_val = MODE_UNDEFINED;
 
 	// Assumes the parameter was provided in the proper case.
-	if 		(0 == strcmp (mode.c_str(), _CONST("ackerman")))
+	if (0 == strcmp (mode.c_str(), _CONST("ackerman")))
 		mode_val = MODE_ACKERMAN;
 	else if (0 == strcmp (mode.c_str(), _CONST("differential")))
 		mode_val = MODE_DIFFERENTIAL;
@@ -526,7 +520,7 @@ static void _init (const char* filename)
 
     /* Initialize all of the global data objects. */
     
-    for (i = 0; i < MAX_BOARDS;i++)
+    for (i = 0; i < MAX_BOARDS; i++)
         _pwm_boards[i] = -1; 
     _active_board = -1;
 
@@ -686,10 +680,10 @@ void servos_drive (const std::shared_ptr<geometry_msgs::msg::Twist> msg)
 		  We drive assigned servos by mixing linear.x and angular.z  and linear.y.
 		*/
 
-		if (dir_r > 0) {	// turning right
+		if (dir_r > 0) {	// Turning right.
 			speed[0] = speed[2] = (temp_x + delta) * dir_x;
 			speed[1] = speed[3] = (temp_x - delta) * dir_x;
-		} else {		// turning left
+		} else {		// Turning left.
 			speed[0] = speed[2] = (temp_x - delta) * dir_x;
 			speed[1] = speed[3] = (temp_x + delta) * dir_x;
 		}
@@ -859,7 +853,7 @@ static int _load_params (void) {
   auto node = std::make_shared<i2cpwmNode>("i2cpwm_controller1");
 
   // Default I2C device on RPi2 and RPi3 = "/dev/i2c-1" Orange Pi Lite = "/dev/i2c-0".
-  node->declare_parameter("i2c_device_number", _controller_io_device/*, 1 */);
+  node->declare_parameter("i2c_device_number", _controller_io_device, 1); .
   std::stringstream device;
   device << "/dev/i2c-" << _controller_io_device;
   _init(device.str().c_str());
