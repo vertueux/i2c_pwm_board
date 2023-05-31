@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>i2cpwm_board</name>
+  <name>i2c_pwm_board</name>
   <version>0.1.0</version>
   <description>
     Controller for the Adafruit 16 channel PWM servo I2C board, hat, and similar PCA9685 based boards,
@@ -15,7 +15,7 @@
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 
-  <depend>i2cpwm_board_msgs</depend>
+  <depend>i2c_pwm_board_msgs</depend>
 
   <build_depend>rclcpp</build_depend>
   <build_depend>std_msgs</build_depend>

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(i2cpwm_board)
+project(i2c_pwm_board_msgs)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -7,32 +7,21 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(std_msgs REQUIRED)
-find_package(std_srvs REQUIRED)
-find_package(i2cpwm_board_msgs REQUIRED)
-find_package(xmlrpcpp REQUIRED)
-find_package(geometry_msgs REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
 
-add_executable(i2cpwm_executable src/i2cpwm_controller.cc)
-target_link_libraries(i2cpwm_executable i2c)
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/Position.msg"
+  "msg/PositionArray.msg"
+  "msg/Servo.msg"
+  "msg/ServoArray.msg"
+  "msg/ServoConfig.msg"
+  "msg/ServoConfigArray.msg"
 
-ament_target_dependencies(i2cpwm_executable 
-  rclcpp 
-  std_msgs 
-  std_srvs
-  i2cpwm_board_msgs
-  xmlrpcpp 
-  geometry_msgs
+  "srv/DriveMode.srv"
+  "srv/IntValue.srv"
+  "srv/ServosConfig.srv"
+  "srv/StopServos.srv"
 )
-
-install(TARGETS
-  i2cpwm_executable 
-  DESTINATION lib/${PROJECT_NAME}
-)
-
-install(DIRECTORY launch
-  DESTINATION share/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
