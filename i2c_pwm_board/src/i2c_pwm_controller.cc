@@ -853,15 +853,15 @@ static int _load_params (void) {
   auto node = std::make_shared<I2CPWMNode>("i2c_pwm_controller1");
 
   // Default I2C device on RPi2 and RPi3 = "/dev/i2c-1" Orange Pi Lite = "/dev/i2c-0".
-  node->declare_parameter("i2c_device_number", _controller_io_device, 1); .
+  node->declare_parameter("i2c_device_number", _controller_io_device); 
   std::stringstream device;
   device << "/dev/i2c-" << _controller_io_device;
   _init(device.str().c_str());
 
-  _set_active_board (1);
+  _set_active_board(1);
 
-  int pwm;
-  node->declare_parameter("pwm_frequency", pwm , 50);
+  int pwm = 50;
+  node->declare_parameter("pwm_frequency", pwm);
   _set_pwm_frequency (pwm);
 
   /*
