@@ -22,7 +22,7 @@ ros2 service call /config_drive_mode i2c_pwm_board_msgs/srv/DriveMode "{mode: di
 # Drive both servos forward at 40% of maximum speed.
 ros2 topic pub -1 /servos_proportional i2c_pwm_board_msgs/msg/ServoArray "{servos:[{servo: 1, value: 0.40}, {servo: 2, value: 0.40}]}"
 
-# More documentation at the original page of the project (for ROS1) -> https://github.com/mentor-dyun/ros-i2cpwmboard/doc or https://gitlab.com/fmrico/ros-i2cpwmboard/-/tree/master/doc
+# More documentation at the original page of the project (for ROS1) -> https://github.com/mentor-dyun/ros-i2cpwmboard/tree/master/doc or https://gitlab.com/fmrico/ros-i2cpwmboard/-/tree/master/doc
 ```
 
 # Installation
