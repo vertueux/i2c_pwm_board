@@ -36,7 +36,7 @@ ros2 topic pub -1 /servos_proportional i2c_pwm_board_msgs/msg/ServoArray "{servo
 
 ## Installation
 
-You need to have ROS2 installed (of course) and theses packages provided by the default desktop installation below : 
+You need to have ROS2 installed (of course) and these packages provided by the default desktop installation below : 
 
 * **rclcpp, std_msgs, std_srvs, geometry_msgs**
 * **rosidl_default_generators, rosidl_default_runtime**
