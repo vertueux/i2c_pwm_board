@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2022-2023 Virtuous, Bradan Lane Studio.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #define _BASE_ADDR   0x40
 #ifndef _PI
 #define _PI 3.14159265358979323846
@@ -18,6 +35,9 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <errno.h>   // for errno.
+#include <limits.h>  // for INT_MAX, INT_MIN.
+#include <stdlib.h>  // for strtol.
 
 // Using "extern "C" {  for safety or warnings.
 extern "C" {
@@ -54,13 +74,6 @@ extern "C" {
 
 // Request/response of the integer parameter services.
 #include "i2c_pwm_board_msgs/srv/int_value.hpp"
-
-// The class that handles messages between the controller and ROS2.
-class I2CPWMNode : public rclcpp::Node {
-public:
-    explicit I2CPWMNode(const std::string & node_name="i2c_pwm_controller", const std::string & node_namespace="/")
-      : rclcpp::Node(node_name, node_namespace) {}
-};
 
 typedef struct _servo_config {
   int center;
@@ -126,78 +139,36 @@ int _active_board = 0;                      // Used to determine if I2C SLAVE ch
 int _controller_io_handle;                  // Linux file handle for I2C.
 int _controller_io_device;                  // Linux file for I2C.
 
-int _pwm_frequency = 50;
+int _pwm_frequency = 50;                    // Servos frequency. 
+
+// The class that handles messages between the controller and ROS2.
+class I2CPWMNode : public rclcpp::Node {
+public:
+ explicit I2CPWMNode(const std::string & node_name="i2c_pwm_controller", const std::string & node_namespace="/")
+   : rclcpp::Node(node_name, node_namespace) {}
+};
+
 
 // The next methods are only used for mathematical operations on the controller.
 static float _abs (float v1) {
   if (v1 < 0)
-      return (0 - v1);
+    return (0 - v1);
   return v1;
 }
-
-/* Not used for now.
-
-static float _min (float v1, float v2) {
-  if (v1 > v2)
-    return v2;
-  return v1;
-}*/
 
 static float _max (float v1, float v2) {
   if (v1 < v2)
     return v2;
   return v1;
 }
-
-/* 
-static float _absmin (float v1, float v2) {
-  float a1, a2;
-  float sign = 1.0;
-  //	if (v1 < 0)
-  //		sign = -1.0;
-  a1 = _abs(v1);
-  a2 = _abs(v2);
-  if (a1 > a2)
-    return (sign * a2);
-  return v1;
-}
-
-static float _absmax (float v1, float v2) {
-  float a1, a2;
-  float sign = 1.0;
-  //	if (v1 < 0)
-  //		sign = -1.0;
-  a1 = _abs(v1);
-  a2 = _abs(v2);
-  if (a1 < a2)
-    return (sign * a2);
-  return v1;
-}*/
-
-/**
- \private Method to smooth a speed value.
- 
- We calculate each speed using a cosine 'curve',  this results in the output curve 
- being shallow at 'stop', full forward, and full reverse and becoming 
- more aggressive in the middle or each direction.
- @param speed An int value (±1.0) indicating original speed.
- @returns An integer value (±1.0) smoothed for more gentle acceleration.
- */
-/*static int _smoothing (float speed) {
-  speed = (cos(_PI*(((float)1.0 - speed))) + 1) / 2;
-}*/
-
 /**
    \private Method to convert meters per second to a proportional value in the range of ±1.0.
  
    @param speed Float requested speed in meters per second.
    @returns Float value (±1.0) for servo speed.
  */
-static float _convert_mps_to_proportional (float speed)
-{
-	/* We use the drive mouter output rpm and wheel radius to compute the conversion. */
-
-	float initial, max_rate;	// The max m/s is ((rpm/60) * (2*PI*radius)).
+static float _convert_mps_to_proportional (float speed) {
+	float initial, max_rate;
   initial = speed;
 
   if (_active_drive.rpm <= 0.0) {
@@ -212,7 +183,6 @@ static float _convert_mps_to_proportional (float speed)
   max_rate = (_active_drive.radius * _PI * 2) * (_active_drive.rpm / 60.0);
 
   speed = speed / max_rate;
-  // speed = _absmin (speed, 1.0);
 
   RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "%6.4f = convert_mps_to_proportional ( speed(%6.4f) / ((radus(%6.4f) * pi(%6.4f) * 2) * (rpm(%6.4f) / 60.0)) )", speed, initial, _active_drive.radius, _PI, _active_drive.rpm);
   return speed;
@@ -225,8 +195,7 @@ static float _convert_mps_to_proportional (float speed)
  * @param frequency an int value (1..15000) indicating the pulse frequency where 50 is typical for RC servos
  * Example _set_frequency (68)  // set the pulse frequency to 68Hz
  */
-static void _set_pwm_frequency (int freq)
-{
+static void _set_pwm_frequency (int freq) {
   int prescale;
   char oldmode, newmode;
 
@@ -234,12 +203,11 @@ static void _set_pwm_frequency (int freq)
     
   RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "_set_pwm_frequency prescale");
   
-  float prescaleval = 25000000.0; // 25MHz
+  float prescaleval = 25000000.0; // 25MHz.
   prescaleval /= 4096.0;
   prescaleval /= (float)freq;
   prescaleval -= 1.0;
   prescale = floor(prescaleval + 0.5);
-  // prescale = (unsigned char)(25000000.0f / (4096.0f * freq) - 0.5f);
 
   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Setting PWM frequency to %d Hz", freq);
 
@@ -249,7 +217,7 @@ static void _set_pwm_frequency (int freq)
   oldmode = i2c_smbus_read_byte_data (_controller_io_handle, __MODE1);
   newmode = (oldmode & 0x7F) | 0x10; // Sleep.
 
-  if (0 > i2c_smbus_write_byte_data (_controller_io_handle, __MODE1, newmode)) // Go to sleep.
+  if (0 > i2c_smbus_write_byte_data (_controller_io_handle, __MODE1, newmode)) 
     RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Unable to set PWM controller to sleep mode"); 
 
   if (0 >  i2c_smbus_write_byte_data(_controller_io_handle, __PRESCALE, (prescale)))
@@ -312,14 +280,11 @@ static void _set_active_board (int board) {
         
     if (0 > ioctl (_controller_io_handle, I2C_SLAVE, (_BASE_ADDR+(board)))) {
       RCLCPP_FATAL(rclcpp::get_logger("rclcpp"), "Failed to acquire bus access and/or talk to I2C slave at address 0x%02X", (_BASE_ADDR+board));
-      return; /* exit(1) */   /* Additional ERROR HANDLING information is available with 'errno'. */
+      return;
     }
 
     if (_pwm_boards[board] < 0) {
       _pwm_boards[board] = 1;
-
-      /* This is guess but I believe the following needs to be done on each board only once. */
-
       if (0 > i2c_smbus_write_byte_data (_controller_io_handle, __MODE2, __OUTDRV))
         RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to enable PWM outputs for totem-pole structure");
 
@@ -330,14 +295,14 @@ static void _set_active_board (int board) {
       nanosleep (&timespec3, NULL);   // Sleep 5 microseconds, wait for osci.
 
       mode1res = i2c_smbus_read_byte_data (_controller_io_handle, __MODE1);
-      mode1res = mode1res & ~__SLEEP; //                 # Wake up (reset sleep).
+      mode1res = mode1res & ~__SLEEP; 
 
       if (0 > i2c_smbus_write_byte_data (_controller_io_handle, __MODE1, mode1res))
         RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to recover from low power mode");
         
-      nanosleep(&timespec3, NULL);   // Sleep 5 microseconds, wait for osci
+      nanosleep(&timespec3, NULL);   // Sleep 5 microseconds, wait for osci/
 
-      // The first time we activate a board, we mark it and set all of its servo channels to 0
+      // The first time we activate a board, we mark it and set all of its servo channels to 0.
       _set_pwm_interval_all(0, 0);
     }
   }
@@ -355,19 +320,19 @@ static void _set_active_board (int board) {
 static void _set_pwm_interval(int servo, int start, int end) {
 	RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "_set_pwm_interval enter");
 
-    if ((servo<1) || (servo>(MAX_SERVOS))) {
-        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Invalid servo number %d :: servo numbers must be between 1 and %d", servo, MAX_BOARDS);
-        return;
-    }
+  if ((servo<1) || (servo>(MAX_SERVOS))) {
+    RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Invalid servo number %d :: servo numbers must be between 1 and %d", servo, MAX_BOARDS);
+    return;
+  }
 
 	int board = ((int)((servo-1)/16))+1;	// servo 1..16 is board #1, servo 17..32 is board #2, etc.
 	_set_active_board(board);
 
-	servo = ((servo-1) % 16) + 1;			// servo numbers are 1..16
+	servo = ((servo-1) % 16) + 1;			    // servo numbers are 1..16.
 
-  // the public API is ONE based and hardware is ZERO based
-  board = _active_board - 1;				// the hardware enumerates boards as 0..61
-  int channel = servo - 1;				// the hardware enumerates servos as 0..15
+                                        // the public API is ONE based and hardware is ZERO based.
+  board = _active_board - 1;				    // the hardware enumerates boards as 0..61.
+  int channel = servo - 1;				      // the hardware enumerates servos as 0..15.
 	RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "_set_pwm_interval board=%d servo=%d", board, servo);
     
   if (0 > i2c_smbus_write_byte_data (_controller_io_handle, __CHANNEL_ON_L+4*channel, start & 0xFF))
@@ -388,9 +353,7 @@ static void _set_pwm_interval(int servo, int start, int end) {
  * @param value an int value (±1.0) indicating when the size of the pulse for the channel.
  * Example _set_pwm_interval (3, 0, 350)    // set servo #3 (fourth position on the hardware board) with a pulse of 350.
  */
-static void _set_pwm_interval_proportional (int servo, float value)
-{
-	// Need a little wiggle room to allow for accuracy of a floating point value
+static void _set_pwm_interval_proportional (int servo, float value) {
 	if ((value < -1.0001) || (value > 1.0001)) {
 		RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Invalid proportion value %f :: proportion values must be between -1.0 and 1.0", value);
 		return;
@@ -422,8 +385,7 @@ static void _set_pwm_interval_proportional (int servo, float value)
  * @param direction An int  either -1 or 1.
  *Example _config_server (1, 300, 100, -1)   // configure the first servo with a center of 300 and range of 100 and reversed direction.
  */
-static void _config_servo (int servo, int center, int range, int direction)
-{
+static void _config_servo (int servo, int center, int range, int direction) {
 	if ((servo < 1) || (servo > (MAX_SERVOS))) {
 		RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Invalid servo number %d :: servo numbers must be between 1 and %d", servo, MAX_SERVOS);
 		return;
@@ -441,7 +403,6 @@ static void _config_servo (int servo, int center, int range, int direction)
 	_servo_configs[servo-1].center = center;
 	_servo_configs[servo-1].range = range;
 	_servo_configs[servo-1].direction = direction;
-	// _servo_configs[servo-1].mode_pos = POSITION_UNDEFINED;
 
 	if (servo > _last_servo)	// Used for internal optimizations.
 		_last_servo = servo;
@@ -449,8 +410,7 @@ static void _config_servo (int servo, int center, int range, int direction)
 	RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Servo #%d configured: center=%d, range=%d, direction=%d", servo, center, range, direction);
 }
 
-static int _config_servo_position (int servo, int position)
-{
+static int _config_servo_position (int servo, int position) {
 	if ((servo < 1) || (servo > (MAX_SERVOS))) {
 		RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Invalid servo number %d :: servo numbers must be between 1 and %d", servo, MAX_SERVOS);
 		return -1;
@@ -464,8 +424,7 @@ static int _config_servo_position (int servo, int position)
 	return 0;
 }
 
-static int _config_drive_mode (std::string mode, float rpm, float radius, float track, float scale)
-{
+static int _config_drive_mode (std::string mode, float rpm, float radius, float track, float scale) {
 	int mode_val = MODE_UNDEFINED;
 
 	// Assumes the parameter was provided in the proper case.
@@ -516,11 +475,8 @@ static int _config_drive_mode (std::string mode, float rpm, float radius, float 
  @param devicename A string value indicating the linux I2C device.
  Example _init ("/dev/i2c-1");  // Default I2C device on RPi2 and RPi3 = "/dev/i2c-1".
  */
-static void _init (const char* filename)
-{
+static void _init (const char* filename) {
   int i;
-
-  /* Initialize all of the global data objects. */
     
   for (i = 0; i < MAX_BOARDS; i++)
     _pwm_boards[i] = -1; 
@@ -542,17 +498,15 @@ static void _init (const char* filename)
 	_active_drive.scale = -1.0;
 	
 	
-    if ((_controller_io_handle = open (filename, O_RDWR)) < 0) {
-        RCLCPP_FATAL(rclcpp::get_logger("rclcpp"), "Failed to open I2C bus %s", filename);
-        return; /* exit(1) */   /* Additional ERROR HANDLING information is available with 'errno'. */
-    }
+  if ((_controller_io_handle = open (filename, O_RDWR)) < 0) {
+    RCLCPP_FATAL(rclcpp::get_logger("rclcpp"), "Failed to open I2C bus %s", filename);
+    return;
+  }
+
 	RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "I2C bus opened on %s", filename);
 }
 
-// Implementations
-
 void servos_absolute (const std::shared_ptr<i2c_pwm_board_msgs::msg::ServoArray> msg) {
-  /* This subscription works on the active_board. */
   for (std::vector<i2c_pwm_board_msgs::msg::Servo>::const_iterator sp = msg->servos.begin(); sp != msg->servos.end(); ++sp) {
     int servo = sp->servo;
     int value = sp->value;
@@ -567,8 +521,6 @@ void servos_absolute (const std::shared_ptr<i2c_pwm_board_msgs::msg::ServoArray>
 }
 
 void servos_proportional (const std::shared_ptr<i2c_pwm_board_msgs::msg::ServoArray> msg) {
-  /* This subscription works on the active_board. */
-
   for (std::vector<i2c_pwm_board_msgs::msg::Servo>::const_iterator sp = msg->servos.begin(); sp != msg->servos.end(); ++sp) {
     int servo = sp->servo;
     float value = sp->value;
@@ -576,10 +528,7 @@ void servos_proportional (const std::shared_ptr<i2c_pwm_board_msgs::msg::ServoAr
   }
 }
 
-void servos_drive (const std::shared_ptr<geometry_msgs::msg::Twist> msg)
-{
-	/* This subscription works on the active_board. */
-
+void servos_drive (const std::shared_ptr<geometry_msgs::msg::Twist> msg) {
 	int i;
 	float delta, range, ratio;
 	float temp_x, temp_y, temp_r;
@@ -608,10 +557,6 @@ void servos_drive (const std::shared_ptr<geometry_msgs::msg::Twist> msg)
 	temp_x = _active_drive.scale * _abs(msg->linear.x);
 	temp_y = _active_drive.scale * _abs(msg->linear.y);
 	temp_r = _abs(msg->angular.z);	// Radians.
-		
-	// temp_x = _smoothing (temp_x);
-	// temp_y = _smoothing (temp_y);
-	// temp_r = _smoothing (temp_r) / 2;
 
 	// The differential rate is the robot rotational circumference / angular velocity.
 	// Since the differential rate is applied to both sides in opposite amounts it is halved.
@@ -623,100 +568,94 @@ void servos_drive (const std::shared_ptr<geometry_msgs::msg::Twist> msg)
 	if (ratio > 1.0)
 		temp_x /= ratio;
 
-	
 	switch (_active_drive.mode) {
-
-	case MODE_ACKERMAN:
-		/*
-		  With ackerman drive, steering is handled by a separate servo.
-		  We drive assigned servos exclusively by the linear.x.
-		*/
-		speed[0] = temp_x * dir_x;
-		speed[0] = _convert_mps_to_proportional(speed[0]);
-		if (_abs(speed[0]) > 1.0)
-			speed[0] = 1.0 * dir_x;
+	  case MODE_ACKERMAN:
+		  /*
+		    With ackerman drive, steering is handled by a separate servo.
+		    We drive assigned servos exclusively by the linear.x.
+		  */
+		  speed[0] = temp_x * dir_x;
+		  speed[0] = _convert_mps_to_proportional(speed[0]);
+		  if (_abs(speed[0]) > 1.0)
+			  speed[0] = 1.0 * dir_x;
 		
-		RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "ackerman drive mode speed=%6.4f", speed[0]);
+		  RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "ackerman drive mode speed=%6.4f", speed[0]);
 		break;
+	  case MODE_DIFFERENTIAL:
+		  /*
+		    With differential drive, steering is handled by the relative speed of left and right servos.
+		    We drive assigned servos by mixing linear.x and angular.z.
+		    We compute the delta for left and right components.
+		    We use the sign of the angular velocity to determine which is the faster / slower.
+		  */
 
-	case MODE_DIFFERENTIAL:
-		/*
-		  With differential drive, steering is handled by the relative speed of left and right servos.
-		  We drive assigned servos by mixing linear.x and angular.z.
-		  We compute the delta for left and right components.
-		  We use the sign of the angular velocity to determine which is the faster / slower.
-		*/
-
-		/* The delta is the angular velocity * half the drive track. */
+		  /* The delta is the angular velocity * half the drive track. */
 		
-		if (dir_r > 0) {	// turning right
-			speed[0] = (temp_x + delta) * dir_x;
-			speed[1] = (temp_x - delta) * dir_x;
-		} else {		// turning left
-			speed[0] = (temp_x - delta) * dir_x;
-			speed[1] = (temp_x + delta) * dir_x;
-		}
+		  if (dir_r > 0) {	// Turning right.
+			  speed[0] = (temp_x + delta) * dir_x;
+			  speed[1] = (temp_x - delta) * dir_x;
+		  } else {		// Turning left.
+			  speed[0] = (temp_x - delta) * dir_x;
+			  speed[1] = (temp_x + delta) * dir_x;
+		  }
 
-		RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "computed differential drive mode speed left=%6.4f right=%6.4f", speed[0], speed[1]);
+		  RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "computed differential drive mode speed left=%6.4f right=%6.4f", speed[0], speed[1]);
 
-		/* Ff any of the results are greater that 1.0, we need to scale all the results down. */
-		range = _max (_abs(speed[0]), _abs(speed[1]));
+		  /* Ff any of the results are greater that 1.0, we need to scale all the results down. */
+		  range = _max (_abs(speed[0]), _abs(speed[1]));
 		
-		ratio = _convert_mps_to_proportional(range);
-		if (ratio > 1.0) {
-			speed[0] /= ratio;
-			speed[1] /= ratio;
-		}
-		RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "adjusted differential drive mode speed left=%6.4f right=%6.4f", speed[0], speed[1]);
+		  ratio = _convert_mps_to_proportional(range);
+		  if (ratio > 1.0) {
+			  speed[0] /= ratio;
+			  speed[1] /= ratio;
+		  }
+		  RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "adjusted differential drive mode speed left=%6.4f right=%6.4f", speed[0], speed[1]);
 
-		speed[0] = _convert_mps_to_proportional(speed[0]);
-		speed[1] = _convert_mps_to_proportional(speed[1]);
+		  speed[0] = _convert_mps_to_proportional(speed[0]);
+		  speed[1] = _convert_mps_to_proportional(speed[1]);
 
-		RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "differential drive mode speed left=%6.4f right=%6.4f", speed[0], speed[1]);
-		break;
+		  RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "differential drive mode speed left=%6.4f right=%6.4f", speed[0], speed[1]);
+		  break;
+	  case MODE_MECANUM:
+		  /*
+		    With mecanum drive, steering is handled by the relative speed of left and right servos.
+		    With mecanum drive, lateral motion is handled by the rotation of front and rear servos.
+		    We drive assigned servos by mixing linear.x and angular.z  and linear.y.
+		  */
 
-	case MODE_MECANUM:
-		/*
-		  With mecanum drive, steering is handled by the relative speed of left and right servos.
-		  With mecanum drive, lateral motion is handled by the rotation of front and rear servos.
-		  We drive assigned servos by mixing linear.x and angular.z  and linear.y.
-		*/
+		  if (dir_r > 0) {	// Turning right.
+			  speed[0] = speed[2] = (temp_x + delta) * dir_x;
+			  speed[1] = speed[3] = (temp_x - delta) * dir_x;
+		  } else {		// Turning left.
+			  speed[0] = speed[2] = (temp_x - delta) * dir_x;
+			  speed[1] = speed[3] = (temp_x + delta) * dir_x;
+		  }
 
-		if (dir_r > 0) {	// Turning right.
-			speed[0] = speed[2] = (temp_x + delta) * dir_x;
-			speed[1] = speed[3] = (temp_x - delta) * dir_x;
-		} else {		// Turning left.
-			speed[0] = speed[2] = (temp_x - delta) * dir_x;
-			speed[1] = speed[3] = (temp_x + delta) * dir_x;
-		}
+		  speed[0] += temp_y * dir_y;
+		  speed[3] += temp_y * dir_y;
+		  speed[1] -= temp_y * dir_y;
+		  speed[2] -= temp_y * dir_y;
+		  RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "computed mecanum drive mode speed leftfront=%6.4f rightfront=%6.4f leftrear=%6.4f rightreer=%6.4f", speed[0], speed[1], speed[2], speed[3]);
 
-		speed[0] += temp_y * dir_y;
-		speed[3] += temp_y * dir_y;
-		speed[1] -= temp_y * dir_y;
-		speed[2] -= temp_y * dir_y;
-		RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "computed mecanum drive mode speed leftfront=%6.4f rightfront=%6.4f leftrear=%6.4f rightreer=%6.4f", speed[0], speed[1], speed[2], speed[3]);
+		  range = _max (_max (_max (_abs(speed[0]), _abs(speed[1])), _abs(speed[2])), _abs(speed[3]));
+		  ratio = _convert_mps_to_proportional(range);
+		  if (ratio > 1.0) {
+			  speed[0] /= ratio;
+			  speed[1] /= ratio;
+			  speed[2] /= ratio;
+			  speed[3] /= ratio;
+		  }
+		  RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "adjusted mecanum drive mode speed leftfront=%6.4f rightfront=%6.4f leftrear=%6.4f rightreer=%6.4f", speed[0], speed[1], speed[2], speed[3]);
 
-		range = _max (_max (_max (_abs(speed[0]), _abs(speed[1])), _abs(speed[2])), _abs(speed[3]));
-		ratio = _convert_mps_to_proportional(range);
-		if (ratio > 1.0) {
-			speed[0] /= ratio;
-			speed[1] /= ratio;
-			speed[2] /= ratio;
-			speed[3] /= ratio;
-		}
-		RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "adjusted mecanum drive mode speed leftfront=%6.4f rightfront=%6.4f leftrear=%6.4f rightreer=%6.4f", speed[0], speed[1], speed[2], speed[3]);
+		  speed[0] = _convert_mps_to_proportional(speed[0]);
+		  speed[1] = _convert_mps_to_proportional(speed[1]);
+		  speed[2] = _convert_mps_to_proportional(speed[2]);
+		  speed[3] = _convert_mps_to_proportional(speed[3]);
 
-		speed[0] = _convert_mps_to_proportional(speed[0]);
-		speed[1] = _convert_mps_to_proportional(speed[1]);
-		speed[2] = _convert_mps_to_proportional(speed[2]);
-		speed[3] = _convert_mps_to_proportional(speed[3]);
-
-		RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "mecanum drive mode speed leftfront=%6.4f rightfront=%6.4f leftrear=%6.4f rightreer=%6.4f", speed[0], speed[1], speed[2], speed[3]);
-		break;
-
-	default:
-		break;
-
+		  RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "mecanum drive mode speed leftfront=%6.4f rightfront=%6.4f leftrear=%6.4f rightreer=%6.4f", speed[0], speed[1], speed[2], speed[3]);
+		  break;
+	  default:
+		  break;
 	}
 	
 	/* Find all drive servos and set their new speed. */
@@ -757,7 +696,6 @@ bool set_pwm_frequency (const std::shared_ptr<i2c_pwm_board_msgs::srv::IntValue:
 }
 
 bool config_servos (const std::shared_ptr<i2c_pwm_board_msgs::srv::ServosConfig::Request> req, std::shared_ptr<i2c_pwm_board_msgs::srv::ServosConfig::Response> res) {
-  /* This service works on the active_board. */
   long unsigned int i;
     
   res->error = 0;
@@ -782,7 +720,6 @@ bool config_servos (const std::shared_ptr<i2c_pwm_board_msgs::srv::ServosConfig:
 
 bool config_drive_mode (const std::shared_ptr<i2c_pwm_board_msgs::srv::DriveMode::Request> req, std::shared_ptr<i2c_pwm_board_msgs::srv::DriveMode::Response> res) {
   res->error = 0;
-
   long unsigned int i;
 
   if ((res->error = _config_drive_mode (req->mode, req->rpm, req->radius, req->track, req->scale)))
@@ -815,6 +752,8 @@ bool config_drive_mode (const std::shared_ptr<i2c_pwm_board_msgs::srv::DriveMode
    \endcode
  */
 bool stop_servos (const std::shared_ptr<std_srvs::srv::Empty::Request> req, std::shared_ptr<std_srvs::srv::Empty::Response> res) {
+
+  // In order to remove a compiler warning.
 	UNUSED(req);
   UNUSED(res);
   
@@ -823,11 +762,11 @@ bool stop_servos (const std::shared_ptr<std_srvs::srv::Empty::Request> req, std:
 
 	for (i=0; i<MAX_BOARDS; i++) {
 		if (_pwm_boards[i] > 0) {
-			_set_active_board (i+1);	// API is ONE based
+			_set_active_board (i+1);	// API is ONE based.
 			_set_pwm_interval_all (0, 0);
 		}
 	}
-	_set_active_board (save_active);	// restore last active board
+	_set_active_board (save_active);
 	return true;
 }
 
@@ -859,7 +798,7 @@ static double _get_float_param (XmlRpc::XmlRpcValue obj, std::string param_name)
 }
     
 static int _load_params (void) {		
-  auto node = std::make_shared<I2CPWMNode>("i2c_pwm_controller1");
+  auto node = std::make_shared<I2CPWMNode>("i2c_pwm_controller_params");
 
   // Default I2C device on RPi2 and RPi3 = "/dev/i2c-1" Orange Pi Lite = "/dev/i2c-0".
   node->declare_parameter("i2c_device_number", _controller_io_device); 
@@ -990,17 +929,25 @@ static int _load_params (void) {
     RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "Parameter Server namespace[%s] does not contain 'drive_config", node->get_namespace());
 
   return 1;
-}	
+}
 
 int main (int argc, char **argv) {	
 	rclcpp::init(argc, argv);
+  
+	char *p;
+  errno = 0;
+  if (argv[1] != NULL) {
+    long conv = strtol(argv[1], &p, 10);
+    if (errno != 0 || *p != '\0' || conv > INT_MAX || conv < INT_MIN) 
+      RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "Expecting an integer to open the i2c-n/ address.");
+    else 
+      _controller_io_device = conv;
+  } else 
+    _controller_io_device = 1;
 
-	auto node = std::make_shared<I2CPWMNode>("i2c_pwm_controller2");
-
-	// globals
-	_controller_io_device = 1;	// default I2C device on RPi2 and RPi3 = "/dev/i2c-1" Orange Pi Lite = "/dev/i2c-0"
+	auto node = std::make_shared<I2CPWMNode>("i2c_pwm_controller");
 	_controller_io_handle = 0;
-	_pwm_frequency = 50;		// set the initial pulse frequency to 50 Hz which is standard for RC servos
+	_pwm_frequency = 50;
 
 	rclcpp::Service<i2c_pwm_board_msgs::srv::IntValue>::SharedPtr freq_srv         = node->create_service<i2c_pwm_board_msgs::srv::IntValue>("set_pwm_frequency", &set_pwm_frequency);
 	rclcpp::Service<i2c_pwm_board_msgs::srv::ServosConfig>::SharedPtr config_srv   =	node->create_service<i2c_pwm_board_msgs::srv::ServosConfig>("config_servos", &config_servos);			// 'config' will setup the necessary properties of continuous servos and is helpful for standard servos
