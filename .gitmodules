@@ -1,0 +1,3 @@
+[submodule "submodule/xmlrpcpp"]
+	path = submodule/xmlrpcpp
+	url = https://github.com/vertueux/xmlrpcpp
