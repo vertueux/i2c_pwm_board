@@ -1,3 +1,0 @@
-[submodule "xmlrpcpp"]
-	path = xmlrpcpp
-	url = https://github.com/bpwilcox/xmlrpcpp
