@@ -8,9 +8,13 @@
 **ROS2** node for controlling PWM boards based on the PCA9685 chip with an I²C interface. Primary use is for controlling RC Servos and DC motors via PWM. This is based on [ros-i2cpwmboard](https://gitlab.com/bradanlane/ros-i2c_pwmboard) *(OUTDATED)* with updates to make it work on ROS2.
 
 ## Documentation
+
 At present, there is no complete new documentation for the project. However, you can access the documentation for the old version of the project (the changes to be made to the terminal are minimal, as it uses ROS1, and the core functionality remains the same). You can access it by [clicking here](https://github.com/mentor-dyun/ros-i2cpwmboard/tree/master/doc) or [here](https://gitlab.com/fmrico/ros-i2cpwmboard/-/tree/master/doc).
 
-## Update
+## Functionalities
+
+The calibration package will help you find the centre and critical values of your servos. [Click here](i2c_pwm_board_calibration/README.md) to take a look.
+
 When you launch the program, you can now choose your I²C bus. Here's an example:
 
 ```bash
@@ -45,11 +49,11 @@ You need to have ROS2 installed (of course) and these packages provided by the d
 * Have ```libi2c-dev``` and ```i2c-tools``` installed
 * Have the [xmlrpcpp](https://github.com/bpwilcox/xmlrpcpp) package
 
-### Clone it 
+### Clone it
 
-You can clone and run this package by copying the command below : 
+You can clone and run this package by copying the command below :
 
-* Note that if you want to run this project, you have to clone the xmlrpcpp packages : 
+* Note that if you want to run this project, you have to clone the xmlrpcpp packages :
 
 ```bash
 git clone --recursive https://github.com/vertueux/i2c_pwm_board.git
@@ -67,35 +71,44 @@ chmod +x install_dependencies.sh
 ```
 
 ### Configure Ubuntu
+
 Make sure that both I²C and SPI are enabled by default. Check the file */boot/firmware/syscfg.txt* and see if you have the following lines :
+
 ```txt 
 dtparam=i2c_arm=on
 dtparam=spi=on
 ```
+
 If not, maybe you can append them on */boot/firmware/usercfg.txt* and reboot, and hopefully, that works. If that doesn't work, maybe do `sudo apt update && sudo full-upgrade` -y and see if there are any distro updates needed.
 
 * Refer to [this post](https://askubuntu.com/questions/1273700/enable-spi-and-i2c-on-ubuntu-20-04-raspberry-pi/1273900#1273900).
 
 You can also add the following line to */boot/config.txt* :
+
 ```bash
 dtparam=i2c_arm=on
 ```
+
 As well as this line to */etc/modules* :
+
 ```bash
 i2c-dev
 ```
+
 * Refer to [this post](https://raspberrypi.stackexchange.com/questions/61905/enable-i2c-on-ubuntu-mate-raspberry-pi-3).
 
 --- 
 With `raspi-config`, you can enable i2c by navigating to *Interface Options->Advanced->I²C* and then enable it.
 
 ### Testing I²C
+
 Now when you log in you can type the following command to see all the connected devices
-```bash 
+
+```bash
 sudo i2cdetect -y 1 # Or 0, depends on the device you use.
 ```
 
-## Build it 
+## Build it
 
 ```bash
 source /opt/ros/humble/setup.bash # With Debian binaries 
@@ -105,6 +118,7 @@ source install/setup.bash # Do not change directory
 ```
 
 ## Run it
+
 In order to run the project, you just have to perform this command :
 
 ```bash
