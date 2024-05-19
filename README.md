@@ -7,6 +7,8 @@
 
 **ROS2** node for controlling PWM boards based on the PCA9685 chip with an I²C interface. Primary use is for controlling RC Servos and DC motors via PWM. This is based on [ros-i2cpwmboard](https://gitlab.com/bradanlane/ros-i2c_pwmboard) *(OUTDATED)* with updates to make it work on ROS2.
 
+To see a practical use of this project, see the [SMOV project](https://github.com/vertueux/smov).
+
 ## Documentation
 
 At present, there is no complete new documentation for the project. However, you can access the documentation for the old version of the project (the changes to be made to the terminal are minimal, as it uses ROS1, and the core functionality remains the same). You can access it by [clicking here](https://github.com/mentor-dyun/ros-i2cpwmboard/tree/master/doc) or [here](https://gitlab.com/fmrico/ros-i2cpwmboard/-/tree/master/doc).
