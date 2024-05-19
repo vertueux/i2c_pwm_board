@@ -6,8 +6,6 @@ Simply, a package to facilitate servo calibration. The Calibration package lets 
 
 ## How it works
 
-Press `escape` to escape the program succesfully.
-
 It works by publishing values to the `front_servos_absolute/` & `back_servos_absolute/` topic.
 
 Know that `servo number = port + 1` on PCA9685 based boards.
