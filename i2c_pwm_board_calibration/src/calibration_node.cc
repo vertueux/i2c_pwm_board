@@ -25,7 +25,7 @@ class CalibrationNode : public rclcpp::Node {
   CalibrationNode() : Node("i2c_pwm_board_calibration") {
     front_abs_pub = this->create_publisher<i2c_pwm_board_msgs::msg::ServoArray>("front_servos_absolute", 1);
     back_abs_pub = this->create_publisher<i2c_pwm_board_msgs::msg::ServoArray>("back_servos_absolute", 1);
-
+        
     get_base_input();
     init_reader(0);
 
@@ -76,8 +76,10 @@ class CalibrationNode : public rclcpp::Node {
         }
         break;
     }
-    if (c == 27 && d != 91) // 27: Escape key.
+    if (c == 27 && d != 91) { // 27: Escape key.
       stop_servos();
+      rclcpp::shutdown();
+    }
   }
 
   void set_up_abs_servo(int board, int servo_number, int default_value) {
@@ -144,23 +146,23 @@ class CalibrationNode : public rclcpp::Node {
 
     while (!front_stop_servos_client->wait_for_service(std::chrono::seconds(1))) {
       if (!rclcpp::ok()) {
-        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the service. Exiting.");
+        RCLCPP_ERROR(this->get_logger(), "Interrupted while waiting for the service. Exiting.");
         return;
       }
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Front Stop Servos service not available, waiting again...");
+      RCLCPP_INFO(this->get_logger(), "Front Stop Servos service not available, waiting again...");
     }
     while (!back_stop_servos_client->wait_for_service(std::chrono::seconds(1))) {
       if (!rclcpp::ok()) {
-        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the service. Exiting.");
+        RCLCPP_ERROR(this->get_logger(), "Interrupted while waiting for the service. Exiting.");
         return;
       }
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Back Stop Servos service not available, waiting again...");
+      RCLCPP_INFO(this->get_logger(), "Back Stop Servos service not available, waiting again...");
     }
 
     auto f_result = front_stop_servos_client->async_send_request(req);
     auto b_result = back_stop_servos_client->async_send_request(req);
   
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Sent a request to stop all servos.");
+    RCLCPP_INFO(this->get_logger(), "Sent a request to stop all servos.");
   }
 };
 
