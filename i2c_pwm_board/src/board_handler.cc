@@ -367,6 +367,7 @@ bool BoardHandler::config_drive_mode_handler(const std::shared_ptr<i2c_pwm_board
 
 bool BoardHandler::stop_servos_handler(const std::shared_ptr<std_srvs::srv::Empty::Request> req,
                                        std::shared_ptr<std_srvs::srv::Empty::Response> res) {
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Stop Servos service has been called.");
 
   // In order to remove a compiler warning.
   UNUSED(req);
