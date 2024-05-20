@@ -18,79 +18,79 @@ void BoardHandler::init(int io_device, int frequency) {
 
 void BoardHandler::set_handlers(int board_number) {
   if (board_number == 1) {
-    this->config_srv = board_node->create_service<i2c_pwm_board_msgs::srv::ServosConfig>("front_config_servos",
+    this->config_srv = board_node->create_service<i2c_pwm_board_msgs::srv::ServosConfig>("main_config_servos",
                                                                                        std::bind(&BoardHandler::config_servos_handler,
                                                                                        this,
                                                                                        std::placeholders::_1,
                                                                                        std::placeholders::_2));     // 'config' will setup the necessary properties of continuous servos and is helpful for standard servos.
-    this->abs_sub = board_node->create_subscription<i2c_pwm_board_msgs::msg::ServoArray>("front_servos_absolute",
+    this->abs_sub = board_node->create_subscription<i2c_pwm_board_msgs::msg::ServoArray>("main_servos_absolute",
                                                                                        500,
                                                                                        std::bind(&BoardHandler::servos_absolute_handler,
                                                                                        this,
                                                                                        std::placeholders::_1));             // The 'absolute' topic will be used for standard servo motion and testing of continuous servos.
 
-    this->rel_sub = board_node->create_subscription<i2c_pwm_board_msgs::msg::ServoArray>("front_servos_proportional",
+    this->rel_sub = board_node->create_subscription<i2c_pwm_board_msgs::msg::ServoArray>("main_servos_proportional",
                                                                                        500,
                                                                                        std::bind(&BoardHandler::servos_proportional_handler,
                                                                                        this,
                                                                                        std::placeholders::_1)); // The 'proportion' topic will be used for standard servos and continuous rotation aka drive servos.
 
-    this->freq_srv = board_node->create_service<i2c_pwm_board_msgs::srv::IntValue>("front_set_pwm_frequency",
+    this->freq_srv = board_node->create_service<i2c_pwm_board_msgs::srv::IntValue>("main_set_pwm_frequency",
                                                                                  std::bind(&BoardHandler::set_pwm_frequency_handler,
                                                                                  this,
                                                                                  std::placeholders::_1,
                                                                                  std::placeholders::_2));
-    this->mode_srv = board_node->create_service<i2c_pwm_board_msgs::srv::DriveMode>("front_config_drive_mode",
+    this->mode_srv = board_node->create_service<i2c_pwm_board_msgs::srv::DriveMode>("main_config_drive_mode",
                                                                                   std::bind(&BoardHandler::config_drive_mode_handler,
                                                                                   this,
                                                                                   std::placeholders::_1,
                                                                                   std::placeholders::_2));                    // 'mode' specifies which servos are used for motion and which behavior will be applied when driving.
-    this->stop_srv = board_node->create_service<std_srvs::srv::Empty>("front_stop_servos",
+    this->stop_srv = board_node->create_service<std_srvs::srv::Empty>("main_stop_servos",
                                                                             std::bind(&BoardHandler::stop_servos_handler,
                                                                             this,
                                                                             std::placeholders::_1,
                                                                             std::placeholders::_2));                                         // The 'stop' service can be used at any time.
-    this->drive_sub = board_node->create_subscription<geometry_msgs::msg::Twist>("front_servos_drive",
+    this->drive_sub = board_node->create_subscription<geometry_msgs::msg::Twist>("main_servos_drive",
                                                                                500,
                                                                                std::bind(&BoardHandler::servos_drive_handler,
                                                                                this,
                                                                                std::placeholders::_1));                     // The 'drive' topic will be used for continuous rotation aka drive servos controlled by Twist messages.
   } else {
-    this->config_srv = board_node->create_service<i2c_pwm_board_msgs::srv::ServosConfig>("back_config_servos",
+    this->config_srv = board_node->create_service<i2c_pwm_board_msgs::srv::ServosConfig>("secondary_config_servos",
                                                                                        std::bind(&BoardHandler::config_servos_handler,
                                                                                        this,
                                                                                        std::placeholders::_1,
                                                                                        std::placeholders::_2));
-    this->abs_sub = board_node->create_subscription<i2c_pwm_board_msgs::msg::ServoArray>("back_servos_absolute",
+    this->abs_sub = board_node->create_subscription<i2c_pwm_board_msgs::msg::ServoArray>("secondary_servos_absolute",
                                                                                        500,
                                                                                        std::bind(&BoardHandler::servos_absolute_handler,
                                                                                        this,
                                                                                        std::placeholders::_1));
-    this->rel_sub = board_node->create_subscription<i2c_pwm_board_msgs::msg::ServoArray>("back_servos_proportional",
+    this->rel_sub = board_node->create_subscription<i2c_pwm_board_msgs::msg::ServoArray>("secondary_servos_proportional",
                                                                                        500,
                                                                                        std::bind(&BoardHandler::servos_proportional_handler,
                                                                                        this,
                                                                                        std::placeholders::_1));
 
-    this->freq_srv = board_node->create_service<i2c_pwm_board_msgs::srv::IntValue>("back_set_pwm_frequency",
+    this->freq_srv = board_node->create_service<i2c_pwm_board_msgs::srv::IntValue>("secondary_set_pwm_frequency",
                                                                                  std::bind(&BoardHandler::set_pwm_frequency_handler,
                                                                                  this,
                                                                                  std::placeholders::_1,
                                                                                  std::placeholders::_2));
 
-    this->mode_srv = board_node->create_service<i2c_pwm_board_msgs::srv::DriveMode>("back_config_drive_mode",
+    this->mode_srv = board_node->create_service<i2c_pwm_board_msgs::srv::DriveMode>("secondary_config_drive_mode",
                                                                                   std::bind(&BoardHandler::config_drive_mode_handler,
                                                                                   this,
                                                                                   std::placeholders::_1,
                                                                                   std::placeholders::_2));
 
-    this->stop_srv = board_node->create_service<std_srvs::srv::Empty>("back_stop_servos",
+    this->stop_srv = board_node->create_service<std_srvs::srv::Empty>("secondary_stop_servos",
                                                                             std::bind(&BoardHandler::stop_servos_handler,
                                                                             this,
                                                                             std::placeholders::_1,
                                                                             std::placeholders::_2));
 
-    this->drive_sub = board_node->create_subscription<geometry_msgs::msg::Twist>("back_servos_drive",
+    this->drive_sub = board_node->create_subscription<geometry_msgs::msg::Twist>("secondary_servos_drive",
                                                                                        500,
                                                                                        std::bind(&BoardHandler::servos_drive_handler,
                                                                                        this,
@@ -99,6 +99,8 @@ void BoardHandler::set_handlers(int board_number) {
 }
 
 void BoardHandler::sigint_handler(int signum) {
+  UNUSED(signum);
+
   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Stopping Servos.");
 
   int save_active = board_node->get_active_board();

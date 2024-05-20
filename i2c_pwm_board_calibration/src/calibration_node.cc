@@ -16,7 +16,7 @@
 #include "i2c_pwm_board_msgs/msg/servo_array.hpp"
 #include "i2c_pwm_board_msgs/msg/servo.hpp"
 
-#define UNUSED(expr) do { (void)(expr); } while (0);
+#define UNUSED(expr) do { (void)(expr); } while (0)
 
 // Used for reading terminal values.
 struct termios old_chars, new_chars;
@@ -32,11 +32,11 @@ namespace smov {
 class CalibrationNode : public rclcpp::Node {
  public:
   CalibrationNode() : Node("i2c_pwm_board_calibration") {
-    front_abs_pub = this->create_publisher<i2c_pwm_board_msgs::msg::ServoArray>("front_servos_absolute", 1);
-    back_abs_pub = this->create_publisher<i2c_pwm_board_msgs::msg::ServoArray>("back_servos_absolute", 1);
+    front_abs_pub = this->create_publisher<i2c_pwm_board_msgs::msg::ServoArray>("main_servos_absolute", 1);
+    back_abs_pub = this->create_publisher<i2c_pwm_board_msgs::msg::ServoArray>("secondary_servos_absolute", 1);
 
-    front_stop_servos_client = this->create_client<std_srvs::srv::Empty>("front_stop_servos");
-    back_stop_servos_client = this->create_client<std_srvs::srv::Empty>("back_stop_servos");
+    front_stop_servos_client = this->create_client<std_srvs::srv::Empty>("main_stop_servos");
+    back_stop_servos_client = this->create_client<std_srvs::srv::Empty>("secondary_stop_servos");
     
     // Getting the default config.
     tcgetattr(0, &old_chars);
@@ -129,7 +129,7 @@ class CalibrationNode : public rclcpp::Node {
   }
 
   static void sigint_handler(int signum) {
-    UNUSED(signum)
+    UNUSED(signum);
 
     // Changing to default config.
     tcsetattr(STDIN_FILENO, TCSANOW, &old_chars);
