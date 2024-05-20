@@ -16,13 +16,16 @@
 #include "i2c_pwm_board_msgs/msg/servo_array.hpp"
 #include "i2c_pwm_board_msgs/msg/servo.hpp"
 
-#define UNUSED(expr) do { (void)(expr); } while (0)
+#define UNUSED(expr) do { (void)(expr); } while (0);
 
 // Used for reading terminal values.
 struct termios old_chars, new_chars;
 
+// Static values.
 rclcpp::Client<std_srvs::srv::Empty>::SharedPtr front_stop_servos_client;
 rclcpp::Client<std_srvs::srv::Empty>::SharedPtr back_stop_servos_client;
+
+int board = 1;
 
 namespace smov {
 
@@ -37,7 +40,7 @@ class CalibrationNode : public rclcpp::Node {
     
     // Getting the default config.
     tcgetattr(0, &old_chars);
-    signal(SIGINT, sigintHandler);
+    signal(SIGINT, sigint_handler);
     
     get_base_input();
 
@@ -125,8 +128,8 @@ class CalibrationNode : public rclcpp::Node {
     }
   }
 
-  static void sigintHandler(int signum) {
-    UNUSED(signum);
+  static void sigint_handler(int signum) {
+    UNUSED(signum)
 
     // Changing to default config.
     tcsetattr(STDIN_FILENO, TCSANOW, &old_chars);
@@ -134,7 +137,7 @@ class CalibrationNode : public rclcpp::Node {
     // Stopping the servos.
     stop_servos();
 
-    // Shutting down rclpp.
+    // Shutting down rclcpp.
     rclcpp::shutdown();
 
     // Abort the program to prevent showing rclcpp exceptions.
@@ -143,30 +146,31 @@ class CalibrationNode : public rclcpp::Node {
 
   static void stop_servos() {
     auto req = std::make_shared<std_srvs::srv::Empty::Request>();
-
-    while (!front_stop_servos_client->wait_for_service(std::chrono::seconds(1))) {
-      if (!rclcpp::ok()) {
-        RCLCPP_ERROR(rclcpp::get_logger("i2c_pwm_board_calibration"), "Interrupted while waiting for the service. Exiting.");
-        return;
+    if (board == 1) {
+      while (!front_stop_servos_client->wait_for_service(std::chrono::seconds(1))) {
+        if (!rclcpp::ok()) {
+          RCLCPP_ERROR(rclcpp::get_logger("i2c_pwm_board_calibration"), "Interrupted while waiting for the service. Exiting.");
+          return;
+        }
+        RCLCPP_INFO(rclcpp::get_logger("i2c_pwm_board_calibration"), "Front Stop Servos service not available, waiting again...");
       }
-      RCLCPP_INFO(rclcpp::get_logger("i2c_pwm_board_calibration"), "Front Stop Servos service not available, waiting again...");
-    }
-    while (!back_stop_servos_client->wait_for_service(std::chrono::seconds(1))) {
-      if (!rclcpp::ok()) {
-        RCLCPP_ERROR(rclcpp::get_logger("i2c_pwm_board_calibration"), "Interrupted while waiting for the service. Exiting.");
-        return;
+      auto f_result = front_stop_servos_client->async_send_request(req);
+    } else {
+      while (!back_stop_servos_client->wait_for_service(std::chrono::seconds(1))) {
+        if (!rclcpp::ok()) {
+          RCLCPP_ERROR(rclcpp::get_logger("i2c_pwm_board_calibration"), "Interrupted while waiting for the service. Exiting.");
+          return;
+        }
+        RCLCPP_INFO(rclcpp::get_logger("i2c_pwm_board_calibration"), "Back Stop Servos service not available, waiting again...");
       }
-      RCLCPP_INFO(rclcpp::get_logger("i2c_pwm_board_calibration"), "Back Stop Servos service not available, waiting again...");
+      auto b_result = back_stop_servos_client->async_send_request(req);
     }
-
-    auto f_result = front_stop_servos_client->async_send_request(req);
-    auto b_result = back_stop_servos_client->async_send_request(req);
   
     RCLCPP_INFO(rclcpp::get_logger("i2c_pwm_board_calibration"), "Sent a request to stop all servos.");
   }
 
  private:
-  int servo_number = 0, board = 1, servo_value = 400, sensibility = 2;
+  int servo_number = 0, servo_value = 400, sensibility = 2;
 
   rclcpp::TimerBase::SharedPtr timer;
 
