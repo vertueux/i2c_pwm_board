@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
 
   board_handler->init(io_device, 50);    // Loads parameters and performs initialization.
 
-  rclcpp::spin(board_handler->board_node);
+  rclcpp::spin(board_node);
 
   close(io_device);
   rclcpp::shutdown();

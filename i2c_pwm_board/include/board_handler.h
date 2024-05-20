@@ -17,12 +17,16 @@
 
 #include "board_controller.h"
 
+// Public node to use in static functions.
+extern std::shared_ptr<BoardNode> board_node;
+
 class BoardHandler {
 
  public:
   explicit BoardHandler(const std::string &node_name);
   void init(int io_device, int frequency);
   void set_handlers(int board_number);
+  static void sigint_handler(int signum);
 
   void servos_absolute_handler(std::shared_ptr<i2c_pwm_board_msgs::msg::ServoArray> msg);
   void servos_proportional_handler(std::shared_ptr<i2c_pwm_board_msgs::msg::ServoArray> msg);
@@ -35,9 +39,6 @@ class BoardHandler {
                                  std::shared_ptr<i2c_pwm_board_msgs::srv::DriveMode::Response> res);
   bool stop_servos_handler(std::shared_ptr<std_srvs::srv::Empty::Request> req,
                            std::shared_ptr<std_srvs::srv::Empty::Response> res);
-
-  std::shared_ptr<BoardNode> board_node;
-
  private:
 
   rclcpp::Service<i2c_pwm_board_msgs::srv::ServosConfig>::SharedPtr config_srv;
