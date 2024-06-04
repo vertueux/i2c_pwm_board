@@ -22,9 +22,7 @@
 struct termios old_chars, new_chars;
 
 // Static values.
-rclcpp::Client<std_srvs::srv::Empty>::SharedPtr front_stop_servos_client;
-rclcpp::Client<std_srvs::srv::Empty>::SharedPtr back_stop_servos_client;
-
+rclcpp::Client<std_srvs::srv::Empty>::SharedPtr stop_servos_client;
 int board = 1;
 
 namespace smov {
@@ -32,17 +30,12 @@ namespace smov {
 class CalibrationNode : public rclcpp::Node {
  public:
   CalibrationNode() : Node("i2c_pwm_board_calibration") {
-    front_abs_pub = this->create_publisher<i2c_pwm_board_msgs::msg::ServoArray>("main_servos_absolute", 1);
-    back_abs_pub = this->create_publisher<i2c_pwm_board_msgs::msg::ServoArray>("secondary_servos_absolute", 1);
-
-    front_stop_servos_client = this->create_client<std_srvs::srv::Empty>("main_stop_servos");
-    back_stop_servos_client = this->create_client<std_srvs::srv::Empty>("secondary_stop_servos");
-    
     // Getting the default config.
     tcgetattr(0, &old_chars);
     signal(SIGINT, sigint_handler);
-    
-    get_base_input();
+  
+    // Initialize publishers & get user input.
+    init();
 
     // Initializing the reader.
     fcntl(0, F_SETFL, O_NONBLOCK);
@@ -64,29 +57,17 @@ class CalibrationNode : public rclcpp::Node {
       case 65: // 65: Key up.
         RCLCPP_INFO(this->get_logger(), "\033[2J\033[;H");
         servo_value += sensibility;
-        if (board == 1) {
-          front_servo_array.servos[0].value = servo_value;
-          RCLCPP_INFO(this->get_logger(), "Servo value: %f", front_servo_array.servos[0].value);
-          front_abs_pub->publish(front_servo_array);
-        } else {
-          back_servo_array.servos[0].value = servo_value;
-          RCLCPP_INFO(this->get_logger(), "Servo value: %f", back_servo_array.servos[0].value);
-          back_abs_pub->publish(back_servo_array);
-        }
+        servo_array.servos[0].value = servo_value;
+        RCLCPP_INFO(this->get_logger(), "Servo value: %f", servo_array.servos[0].value);
+        abs_pub->publish(servo_array);
         break;
       case 66: // 66: Key down.
         RCLCPP_INFO(this->get_logger(), "\033[2J\033[;H");
         servo_value -= sensibility;
         if (servo_value > 0) {
-          if (board == 1) {
-            front_servo_array.servos[0].value = servo_value;
-            RCLCPP_INFO(this->get_logger(), "Servo value: %f", front_servo_array.servos[0].value);
-            front_abs_pub->publish(front_servo_array);
-          } else {
-            back_servo_array.servos[0].value = servo_value;
-            RCLCPP_INFO(this->get_logger(), "Servo value: %f", back_servo_array.servos[0].value);
-            back_abs_pub->publish(back_servo_array);
-          }
+          servo_array.servos[0].value = servo_value;
+          RCLCPP_INFO(this->get_logger(), "Servo value: %f", servo_array.servos[0].value);
+          abs_pub->publish(servo_array);
         } else {
           RCLCPP_ERROR(this->get_logger(), "Servo value can't be negative. Defaulting to 50.");
           servo_value = 50;
@@ -95,9 +76,12 @@ class CalibrationNode : public rclcpp::Node {
     }
   }
 
-  void get_base_input() {
+  void init() {
     RCLCPP_INFO(this->get_logger(), "Board (1 or etc..):");
     std::cin >> board;
+
+    abs_pub = this->create_publisher<i2c_pwm_board_msgs::msg::ServoArray>("servos_absolute_" + std::to_string(board), 1);
+    stop_servos_client = this->create_client<std_srvs::srv::Empty>("stop_servos_" + std::to_string(board));
 
     RCLCPP_INFO(this->get_logger(), "Servo number:");
     std::cin >> servo_number;
@@ -108,24 +92,16 @@ class CalibrationNode : public rclcpp::Node {
     RCLCPP_INFO(this->get_logger(), "Sensibility (new value = default value +/- sensibility):");
     std::cin >> sensibility;
 
-    set_up_abs_servo(board, servo_number, servo_value);
+    set_up_abs_servo(servo_number, servo_value);
   }
 
-  void set_up_abs_servo(int board, int servo_number, int default_value) {
-    i2c_pwm_board_msgs::msg::Servo front_temp_servo;
-    i2c_pwm_board_msgs::msg::Servo back_temp_servo;
+  void set_up_abs_servo(int servo_number, int default_value) {
+    i2c_pwm_board_msgs::msg::Servo temp_servos;
 
-    if (board == 1) {
-      front_temp_servo.servo = static_cast<int16_t>(servo_number);
-      front_temp_servo.value = default_value;
-      front_servo_array.servos.push_back(front_temp_servo);
-      front_abs_pub->publish(front_servo_array);
-    } else {
-      back_temp_servo.servo = static_cast<int16_t>(servo_number);
-      back_temp_servo.value = default_value;
-      back_servo_array.servos.push_back(back_temp_servo);
-      back_abs_pub->publish(back_servo_array);
-    }
+    temp_servos.servo = static_cast<int16_t>(servo_number);
+    temp_servos.value = default_value;
+    servo_array.servos.push_back(temp_servos);
+    abs_pub->publish(servo_array);
   }
 
   static void sigint_handler(int signum) {
@@ -146,39 +122,24 @@ class CalibrationNode : public rclcpp::Node {
 
   static void stop_servos() {
     auto req = std::make_shared<std_srvs::srv::Empty::Request>();
-    if (board == 1) {
-      while (!front_stop_servos_client->wait_for_service(std::chrono::seconds(1))) {
-        if (!rclcpp::ok()) {
-          RCLCPP_ERROR(rclcpp::get_logger("i2c_pwm_board_calibration"), "Interrupted while waiting for the service. Exiting.");
-          return;
-        }
-        RCLCPP_INFO(rclcpp::get_logger("i2c_pwm_board_calibration"), "Front Stop Servos service not available, waiting again...");
+    while (!stop_servos_client->wait_for_service(std::chrono::seconds(1))) {
+      if (!rclcpp::ok()) {
+        RCLCPP_ERROR(rclcpp::get_logger("i2c_pwm_board_calibration"), "Interrupted while waiting for the service. Exiting.");
+        return;
       }
-      auto f_result = front_stop_servos_client->async_send_request(req);
-    } else {
-      while (!back_stop_servos_client->wait_for_service(std::chrono::seconds(1))) {
-        if (!rclcpp::ok()) {
-          RCLCPP_ERROR(rclcpp::get_logger("i2c_pwm_board_calibration"), "Interrupted while waiting for the service. Exiting.");
-          return;
-        }
-        RCLCPP_INFO(rclcpp::get_logger("i2c_pwm_board_calibration"), "Back Stop Servos service not available, waiting again...");
-      }
-      auto b_result = back_stop_servos_client->async_send_request(req);
+      RCLCPP_INFO(rclcpp::get_logger("i2c_pwm_board_calibration"), "Front Stop Servos service not available, waiting again...");
     }
-  
-    RCLCPP_INFO(rclcpp::get_logger("i2c_pwm_board_calibration"), "Sent a request to stop all servos.");
-  }
+    auto f_result = stop_servos_client->async_send_request(req);
+  } 
 
  private:
   int servo_number = 0, servo_value = 400, sensibility = 2;
 
   rclcpp::TimerBase::SharedPtr timer;
 
-  i2c_pwm_board_msgs::msg::ServoArray front_servo_array;
-  i2c_pwm_board_msgs::msg::ServoArray back_servo_array;
+  i2c_pwm_board_msgs::msg::ServoArray servo_array;
 
-  rclcpp::Publisher<i2c_pwm_board_msgs::msg::ServoArray>::SharedPtr front_abs_pub;
-  rclcpp::Publisher<i2c_pwm_board_msgs::msg::ServoArray>::SharedPtr back_abs_pub;
+  rclcpp::Publisher<i2c_pwm_board_msgs::msg::ServoArray>::SharedPtr abs_pub;
 };
 
 } // namespace smov

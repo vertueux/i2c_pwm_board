@@ -25,7 +25,7 @@ ros2 run i2c_pwm_board controller 1 # The "1" tells the program to open the i2c-
 
 This will be particularly useful for opening several buses between programs, and for easily adapting to the RPi Zero, which has an `i2c-0/` bus by default.
 
-It works as follows: If you want to open a bus, it ends subjects with the bus number as a suffix (in example, `[service_name]_1` for the `i2c-1/` bus).
+When you run the node, the topics & services will end with the bus number as a suffix (in example, `[service_name]_1` for the `i2c-1/` bus).
 
 ## Examples
 
@@ -51,7 +51,7 @@ You need to have ROS2 installed (of course) and these packages provided by the d
 * **rosidl_default_generators, rosidl_default_runtime**
 * Have ```python3-colcon-common-extensions``` installed
 * Have ```libi2c-dev``` and ```i2c-tools``` installed
-* Have the [xmlrpcpp](https://github.com/bpwilcox/xmlrpcpp) package
+* Have the [xmlrpcpp](https://github.com/vertueux/xmlrpcpp) package
 
 ### Clone it
 
@@ -76,24 +76,17 @@ chmod +x install_dependencies.sh
 
 ### Configure Ubuntu
 
-Make sure that both I²C and SPI are enabled by default. Check the file */boot/firmware/syscfg.txt* and see if you have the following lines :
+Make sure that I²C is enabled by default. Check the file */boot/firmware/syscfg.txt* and see if you have the following line:
 
-```txt 
+```txt
 dtparam=i2c_arm=on
-dtparam=spi=on
 ```
 
-If not, maybe you can append them on */boot/firmware/usercfg.txt* and reboot, and hopefully, that works. If that doesn't work, maybe do `sudo apt update && sudo full-upgrade` -y and see if there are any distro updates needed.
+If not, maybe you can append them on */boot/firmware/usercfg.txt* and reboot, and hopefully, that works. If that doesn't work, maybe do `sudo apt update && sudo full-upgrade -y`  and see if there are any distro updates needed.
 
 * Refer to [this post](https://askubuntu.com/questions/1273700/enable-spi-and-i2c-on-ubuntu-20-04-raspberry-pi/1273900#1273900).
 
-You can also add the following line to */boot/config.txt* :
-
-```bash
-dtparam=i2c_arm=on
-```
-
-As well as this line to */etc/modules* :
+You can also add the following line to */etc/modules*:
 
 ```bash
 i2c-dev
@@ -101,12 +94,15 @@ i2c-dev
 
 * Refer to [this post](https://raspberrypi.stackexchange.com/questions/61905/enable-i2c-on-ubuntu-mate-raspberry-pi-3).
 
---- 
-With `raspi-config`, you can enable i2c by navigating to *Interface Options->Advanced->I²C* and then enable it.
+---
+
+On a RPi, with `raspi-config`, you can enable I²C by navigating to *Interface Options->Advanced->I²C* and then enable it.
+
+If you're not using a second microcontroller and you don't have an LCD panel, you can go straight to [the next step](build_the_project.md).
 
 ### Testing I²C
 
-Now when you log in you can type the following command to see all the connected devices
+Now when you log in you can type the following command to see all the connected devices:
 
 ```bash
 sudo i2cdetect -y 1 # Or 0, depends on the device you use.
@@ -115,10 +111,10 @@ sudo i2cdetect -y 1 # Or 0, depends on the device you use.
 ## Build it
 
 ```bash
-source /opt/ros/humble/setup.bash # With Debian binaries 
+source /opt/ros/humble/setup.bash # With Debian binaries.
 cd /i2c_pwm_board/
-colcon build --packages-select i2c_pwm_board i2c_pwm_board_msgs xmlrpcpp
-source install/setup.bash # Do not change directory
+colcon build 
+source install/setup.bash # Do not change directory.
 ```
 
 ## Run it
