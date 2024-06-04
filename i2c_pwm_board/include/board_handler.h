@@ -5,6 +5,8 @@
 #ifndef BOARD_HANDLER_H_
 #define BOARD_HANDLER_H_
 
+#include <string>
+
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/logging.hpp>
 #include <std_srvs/srv/empty.hpp>

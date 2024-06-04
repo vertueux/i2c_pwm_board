@@ -25,7 +25,7 @@ ros2 run i2c_pwm_board controller 1 # The "1" tells the program to open the i2c-
 
 This will be particularly useful for opening several buses between programs, and for easily adapting to the RPi Zero, which has an `i2c-0/` bus by default.
 
-It works as follows: If you want to open `i2c-1` (RPi default, except for the RPi Zero), it will start the topics under the `main_` prefix. Otherwise, if you open another bus, it will start the topics under the `secondary_` prefix.  
+It works as follows: If you want to open a bus, it ends subjects with the bus number as a suffix (in example, `[service_name]_1` for the `i2c-1/` bus). Otherwise, if you open another bus, it will start the topics under the `secondary_` prefix.  
 You can therefore currently only control two boards at a time.
 
 ## Examples
