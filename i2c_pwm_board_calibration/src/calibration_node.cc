@@ -127,7 +127,7 @@ class CalibrationNode : public rclcpp::Node {
         RCLCPP_ERROR(rclcpp::get_logger("i2c_pwm_board_calibration"), "Interrupted while waiting for the service. Exiting.");
         return;
       }
-      RCLCPP_INFO(rclcpp::get_logger("i2c_pwm_board_calibration"), "Front Stop Servos service not available, waiting again...");
+      RCLCPP_INFO(rclcpp::get_logger("i2c_pwm_board_calibration"), "Stop Servos service not available, waiting again...");
     }
     auto f_result = stop_servos_client->async_send_request(req);
   } 
