@@ -15,7 +15,7 @@ At present, there is no complete new documentation for the project. However, you
 
 ## Functionalities
 
-The calibration package will help you find the centre and critical values of your servos. [Click here](i2c_pwm_board_calibration/README.md) to take a look.
+The calibration package will help you find the center and critical values of your servos. [Click here](i2c_pwm_board_calibration/README.md) to take a look.
 
 When you launch the program, you can now choose your I²C bus. Here's an example:
 
@@ -25,8 +25,7 @@ ros2 run i2c_pwm_board controller 1 # The "1" tells the program to open the i2c-
 
 This will be particularly useful for opening several buses between programs, and for easily adapting to the RPi Zero, which has an `i2c-0/` bus by default.
 
-It works as follows: If you want to open a bus, it ends subjects with the bus number as a suffix (in example, `[service_name]_1` for the `i2c-1/` bus). Otherwise, if you open another bus, it will start the topics under the `secondary_` prefix.  
-You can therefore currently only control two boards at a time.
+It works as follows: If you want to open a bus, it ends subjects with the bus number as a suffix (in example, `[service_name]_1` for the `i2c-1/` bus).
 
 ## Examples
 
