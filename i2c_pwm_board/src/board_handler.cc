@@ -66,11 +66,11 @@ void BoardHandler::sigint_handler(int signum) {
 
   for (i = 0; i < MAX_BOARDS; i++) {
     if (board_node->pwm_boards[i] > 0) {
-      board_node->set_active_board(i + 1);    // API is ONE based.
+      board_node->set_active_internal_board(i + 1);    // API is ONE based.
       board_node->set_pwm_interval_all(0, 0);
     }
   }
-  board_node->set_active_board(save_active);
+  board_node->set_active_internal_board(save_active);
 
   // Shutting down rclcpp.
   rclcpp::shutdown();
@@ -361,10 +361,10 @@ bool BoardHandler::stop_servos_handler(const std::shared_ptr<std_srvs::srv::Empt
 
   for (i = 0; i < MAX_BOARDS; i++) {
     if (board_node->pwm_boards[i] > 0) {
-      board_node->set_active_board(i + 1);    // API is ONE based.
+      board_node->set_active_internal_board(i + 1);    // API is ONE based.
       board_node->set_pwm_interval_all(0, 0);
     }
   }
-  board_node->set_active_board(save_active);
+  board_node->set_active_internal_board(save_active);
   return true;
 }

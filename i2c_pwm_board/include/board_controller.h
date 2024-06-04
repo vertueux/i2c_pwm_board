@@ -75,7 +75,7 @@ class BoardNode : public rclcpp::Node {
   float convert_mps_to_proportional(float speed);
   void set_pwm_frequency(int freq);
   void set_pwm_interval_all(int start, int end);
-  void set_active_board(int board);
+  void set_active_internal_board(int board);
   void set_pwm_interval(int servo, int start, int end);
   void set_pwm_interval_proportional(int servo, float value);
   void config_servo(int servo, int center, int range, int direction);

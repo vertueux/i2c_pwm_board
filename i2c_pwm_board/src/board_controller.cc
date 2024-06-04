@@ -145,29 +145,33 @@ void BoardNode::set_pwm_interval_all(int start, int end) {
 
   if (0 > i2c_smbus_write_byte_data(this->controller_io_handle, ALL_CHANNELS_ON_L, start & 0xFF))
     RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),
-                 "Error setting PWM start low byte for all servos on board %d",
-                 this->active_board);
+                 "Error setting PWM start low byte for all servos on internal board %d (bus %d)",
+                 this->active_board,
+                 this->controller_io_device);
   if (0 > i2c_smbus_write_byte_data(this->controller_io_handle, ALL_CHANNELS_ON_H, start >> 8))
     RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),
-                 "Error setting PWM start high byte for all servos on board %d",
-                 this->active_board);
+                 "Error setting PWM start high byte for all servos on internal board %d (bus %d)",
+                 this->active_board,
+                 this->controller_io_device);
   if (0 > i2c_smbus_write_byte_data(this->controller_io_handle, ALL_CHANNELS_OFF_L, end & 0xFF))
     RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),
-                 "Error setting PWM end low byte for all servos on board %d",
-                 this->active_board);
+                 "Error setting PWM end low byte for all servos on internal board %d (bus %d)",
+                 this->active_board,
+                 this->controller_io_device);
   if (0 > i2c_smbus_write_byte_data(this->controller_io_handle, ALL_CHANNELS_OFF_H, end >> 8))
     RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),
-                 "Error setting PWM end high byte for all servos on board %d",
-                 this->active_board);
+                 "Error setting PWM end high byte for all servos on internal board %d (bus %d)",
+                 this->active_board,
+                 this->controller_io_device);
 }
 
 /**
  * \private Method to set the active board.
  *
  * @param board An int value (1..62) indicating which board to activate for subsequent service and topic subscription activity where 1 coresponds to the default board address of 0x40 and value increment up.
- * Example set_active_board (68)   // set the pulse frequency to 68Hz.
+ * Example set_active_internal_board (68)   // set the pulse frequency to 68Hz.
  */
-void BoardNode::set_active_board(int board) {
+void BoardNode::set_active_internal_board(int board) {
   char mode1res;
 
   if ((board < 1) || (board > 62)) {
@@ -236,7 +240,7 @@ void BoardNode::set_pwm_interval(int servo, int start, int end) {
   }
 
   int board = ((int) ((servo - 1) / 16)) + 1; // servo 1..16 is board #1, servo 17..32 is board #2, etc.
-  this->set_active_board(board);
+  this->set_active_internal_board(board);
 
   servo = ((servo - 1) % 16) + 1;             // servo numbers are 1..16.
 
@@ -247,24 +251,28 @@ void BoardNode::set_pwm_interval(int servo, int start, int end) {
 
   if (0 > i2c_smbus_write_byte_data(this->controller_io_handle, CHANNEL_ON_L + 4 * channel, start & 0xFF))
     RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),
-                 "Error setting PWM start low byte on servo %d on internal board %d",
+                 "Error setting PWM start low byte on servo %d on internal board %d (bus %d)",
                  servo,
-                 this->active_board);
+                 this->active_board,
+                 this->controller_io_device);
   if (0 > i2c_smbus_write_byte_data(this->controller_io_handle, CHANNEL_ON_H + 4 * channel, start >> 8))
     RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),
-                 "Error setting PWM start high byte on servo %d on internal board %d",
+                 "Error setting PWM start high byte on servo %d on internal board %d (bus %d)",
                  servo,
-                 this->active_board);
+                 this->active_board,
+                 this->controller_io_device);
   if (0 > i2c_smbus_write_byte_data(this->controller_io_handle, CHANNEL_OFF_L + 4 * channel, end & 0xFF))
     RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),
-                 "Error setting PWM end low byte on servo %d on internal board %d",
+                 "Error setting PWM end low byte on servo %d on internal board %d (bus %d)",
                  servo,
-                 this->active_board);
+                 this->active_board,
+                 this->controller_io_device);
   if (0 > i2c_smbus_write_byte_data(this->controller_io_handle, CHANNEL_OFF_H + 4 * channel, end >> 8))
     RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),
-                 "Error setting PWM end high byte on servo %d on internal board %d",
+                 "Error setting PWM end high byte on servo %d on internal board %d (bus %d)",
                  servo,
-                 this->active_board);
+                 this->active_board,
+                 this->controller_io_device);
 }
 
 /**
@@ -490,7 +498,7 @@ int BoardNode::init(int io_device, int frequency) {
   device << "/dev/i2c-" << this->controller_io_device;
   this->setup(device.str().c_str());
 
-  this->set_active_board(1); // Internal board is equal to one (considering boards inside the bus, and not external boards on different buses).
+  this->set_active_internal_board(1); // Internal board is equal to one (considering boards inside the bus, and not external boards on different buses).
 
   int pwm = 50;
   node->declare_parameter("pwm_frequency", pwm);
@@ -531,7 +539,7 @@ int BoardNode::init(int io_device, int frequency) {
           if (id && center && direction && range) {
             if ((id >= 1) && (id <= MAX_SERVOS)) {
               int board = ((int) (id / 16)) + 1;
-              this->set_active_board(board);
+              this->set_active_internal_board(board);
               this->set_pwm_frequency(pwm);
               this->config_servo(id, center, range, direction);
             } else
