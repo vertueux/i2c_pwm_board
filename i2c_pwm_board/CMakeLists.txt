@@ -16,13 +16,13 @@ find_package(i2c_pwm_board_xmlrp REQUIRED)
 
 include_directories(include)
 
-add_executable(controller src/board.cc src/board_handler.cc src/board_controller.cc)
-target_link_libraries(controller i2c)
+add_executable(node src/board.cc src/board_handler.cc src/board_controller.cc)
+target_link_libraries(node i2c)
 
-ament_target_dependencies(controller rclcpp std_msgs std_srvs i2c_pwm_board_msgs xmlrpcpp geometry_msgs i2c_pwm_board_xmlrp)
+ament_target_dependencies(node rclcpp std_msgs std_srvs i2c_pwm_board_msgs xmlrpcpp geometry_msgs i2c_pwm_board_xmlrp)
 
 install(TARGETS
-        controller
+        node
         DESTINATION lib/${PROJECT_NAME}
 )
 

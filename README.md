@@ -20,7 +20,7 @@ The calibration package will help you find the center and critical values of you
 When you launch the program, you can now choose your I²C bus. Here's an example:
 
 ```bash
-ros2 run i2c_pwm_board controller 1 # The "1" tells the program to open the i2c-1/ bus, but you can change it to your desired bus.
+ros2 run i2c_pwm_board node 1 # The "1" tells the program to open the i2c-1/ bus, but you can change it to your desired bus.
 ```
 
 This will be particularly useful for opening several buses between programs, and for easily adapting to the RPi Zero, which has an `i2c-0/` bus by default.
@@ -122,5 +122,5 @@ source install/setup.bash # Do not change directory.
 In order to run the project, you just have to perform this command :
 
 ```bash
-ros2 run i2c_pwm_board controller # You can add your I²C bus address as a digit (like 1 to open i2c-1/).
+ros2 run i2c_pwm_board node # You can add your I²C bus address as a digit (like 1 to open i2c-1/).
 ```
