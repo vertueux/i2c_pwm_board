@@ -31,16 +31,16 @@ When you run the node, the topics & services will end with the bus number as a s
 
 ```bash
 # Setting PWM frequency to 50Hz.
-ros2 service call /set_pwm_frequency i2c_pwm_board_msgs/srv/IntValue "{value: 50}"
+ros2 service call /set_pwm_frequency_1 i2c_pwm_board_msgs/srv/IntValue "{value: 50}"
 
 # Configuring two servos.
-ros2 service call /config_servos i2c_pwm_board_msgs/srv/ServosConfig "servos: [{servo: 1, center: 333, range: 100, direction: -1},{servo: 2, center: 336, range: 108, direction: 1}]"
+ros2 service call /config_servos_1 i2c_pwm_board_msgs/srv/ServosConfig "servos: [{servo: 1, center: 333, range: 100, direction: -1},{servo: 2, center: 336, range: 108, direction: 1}]"
 
 # Configuring those two servos on differential mode.
-ros2 service call /config_drive_mode i2c_pwm_board_msgs/srv/DriveMode "{mode: differential, rpm: 56.0, radius: 0.0055, track: 0.015, scale: 1.0,servos: [{servo: 1, position: 1}, {servo: 2, position: 2}]}"
+ros2 service call /config_drive_mode_1 i2c_pwm_board_msgs/srv/DriveMode "{mode: differential, rpm: 56.0, radius: 0.0055, track: 0.015, scale: 1.0,servos: [{servo: 1, position: 1}, {servo: 2, position: 2}]}"
 
 # Drive both servos forward using proportional value between [-1; 1].
-ros2 topic pub -1 /servos_proportional i2c_pwm_board_msgs/msg/ServoArray "{servos:[{servo: 1, value: 0.40}, {servo: 2, value: 0.40}]}"
+ros2 topic pub -1 /servos_proportional_1 i2c_pwm_board_msgs/msg/ServoArray "{servos:[{servo: 1, value: 0.40}, {servo: 2, value: 0.40}]}"
 ```
 
 ## Installation
