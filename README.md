@@ -98,8 +98,6 @@ i2c-dev
 
 On a RPi, with `raspi-config`, you can enable I²C by navigating to *Interface Options->Advanced->I²C* and then enable it.
 
-If you're not using a second microcontroller and you don't have an LCD panel, you can go straight to [the next step](build_the_project.md).
-
 ### Testing I²C
 
 Now when you log in you can type the following command to see all the connected devices:
