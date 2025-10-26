@@ -125,58 +125,52 @@ You can clone and run this package by copying the command below :
 git clone --recursive https://github.com/vertueux/i2c_pwm_board.git
 ```
 
-### Install automatically
-
-You can install the i2c library and colcon by running the install scripts located at `scripts/install_dependencies.sh`.
-Simply just copy & paste this code :
-
-```sh
-cd scripts/
-chmod +x install_dependencies.sh
-./install_dependencies
-```
-
 ### Configure Ubuntu
-Make sure that both I2C and SPI are enabled by default. Check the file */boot/firmware/syscfg.txt* and see if you have the following lines :
-```txt 
+
+Make sure that I²C is enabled by default. Check the file */boot/firmware/syscfg.txt* and see if you have the following line:
+
+```txt
 dtparam=i2c_arm=on
-dtparam=spi=on
 ```
-If not, maybe you can append them on */boot/firmware/usercfg.txt* and reboot, and hopefully, that works. If that doesn't work, maybe do `sudo apt update && sudo full-upgrade` -y and see if there are any distro updates needed.
+
+If not, maybe you can append them on */boot/firmware/usercfg.txt* and reboot, and hopefully, that works. If that doesn't work, maybe do `sudo apt update && sudo full-upgrade -y`  and see if there are any distro updates needed.
 
 * Refer to [this post](https://askubuntu.com/questions/1273700/enable-spi-and-i2c-on-ubuntu-20-04-raspberry-pi/1273900#1273900).
 
-You can also add the following line to */boot/config.txt* :
-```bash
-dtparam=i2c_arm=on
-```
-As well as this line to */etc/modules* :
+You can also add the following line to */etc/modules*:
+
 ```bash
 i2c-dev
 ```
+
 * Refer to [this post](https://raspberrypi.stackexchange.com/questions/61905/enable-i2c-on-ubuntu-mate-raspberry-pi-3).
 
---- 
-With `raspi-config`, you can enable i2c by navigating to *Interface Options->Advanced->I2C* and then enable it.
+---
 
-### Testing I2C
-Now when you log in you can type the following command to see all the connected devices
-```bash 
+On a RPi, with `raspi-config`, you can enable I²C by navigating to *Interface Options->Advanced->I²C* and then enable it.
+
+### Testing I²C
+
+Now when you log in you can type the following command to see all the connected devices:
+
+```bash
 sudo i2cdetect -y 1 # Or 0, depends on the device you use.
 ```
 
-### Build it 
+## Build it
 
 ```bash
-source /opt/ros/humble/setup.bash # With Debian binaries 
+source /opt/ros/humble/setup.bash # With Debian binaries.
 cd /i2c_pwm_board/
-colcon build --packages-select i2c_pwm_board i2c_pwm_board_msgs xmlrpcpp
-source install/setup.bash # Do not change directory
+colcon build 
+source install/setup.bash # Do not change directory.
 ```
 
 ## Run it
+
 In order to run the project, you just have to perform this command :
 
 ```bash
-ros2 run i2c_pwm_board i2c_pwm_executable
+ros2 run i2c_pwm_board node # You can add your I²C bus address as a digit (like 1 to open i2c-1/).
 ```
+

@@ -63,17 +63,6 @@ You can clone and run this package by copying the command below :
 git clone --recursive https://github.com/vertueux/i2c_pwm_board.git
 ```
 
-### Install automatically
-
-You can install the i2c library and colcon by running the install scripts located at `scripts/install_dependencies.sh`.
-Simply just copy & paste this code :
-
-```sh
-cd scripts/
-chmod +x install_dependencies.sh
-./install_dependencies
-```
-
 ### Configure Ubuntu
 
 Make sure that I²C is enabled by default. Check the file */boot/firmware/syscfg.txt* and see if you have the following line:
